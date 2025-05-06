@@ -1,11 +1,15 @@
 
 export interface UserData {
   id: string;
-  name: string;
+  username: string;
   email: string;
   role: string;
   token: string;
   tenantSlug?: string;
+  tenantId?: string;
+  tenantLabel?: string;
+  tokenType?: string;
+  virtueProjectNameId?: string; // Added for future use
 }
 
 export interface LoginResponse {

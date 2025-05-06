@@ -26,14 +26,14 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="shadow-md hover:shadow-lg transition-shadow">
           <CardHeader className="bg-nepali-red bg-opacity-10 pb-2">
-            <CardTitle className="text-xl text-nepali-maroon">Welcome, {user?.name}</CardTitle>
+            <CardTitle className="text-xl text-nepali-maroon">Welcome, {user?.username}</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <p className="text-gray-600">
               Start your Nepali learning journey today. Access your lessons and track your progress.
             </p>
             <div className="mt-4">
-              <Button className="nepali-gradient text-white">Begin Learning</Button>
+              <Button className="nepali-gradient text-white" onClick={() => navigate("/begin-learning")}>Begin Learning</Button>
             </div>
           </CardContent>
         </Card>
