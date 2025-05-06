@@ -4,22 +4,26 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import TenantLogin from "@/components/TenantLogin";
 
-const Index: React.FC = () => {
-  const { tenantSlug, isAuthenticated } = useAuth();
+const SlugLogin: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const { isAuthenticated, setTenantSlug } = useAuth();
   const navigate = useNavigate();
-  const { slug } = useParams<{ slug?: string }>();
   
   useEffect(() => {
+    if (slug) {
+      setTenantSlug(slug);
+    }
+    
     if (isAuthenticated) {
       navigate("/dashboard");
     }
-  }, [isAuthenticated, navigate]);
+  }, [slug, isAuthenticated, navigate, setTenantSlug]);
   
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left side - Login Form */}
       <div className="w-full md:w-1/3 flex items-center justify-center p-4 md:p-8 login-background">
-        <TenantLogin initialSlug={slug || tenantSlug || ""} />
+        <TenantLogin initialSlug={slug || ""} />
       </div>
       
       {/* Right side - App Showcase */}
@@ -58,4 +62,4 @@ const Index: React.FC = () => {
   );
 };
 
-export default Index;
+export default SlugLogin;
