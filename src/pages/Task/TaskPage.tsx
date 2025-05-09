@@ -3,6 +3,8 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import TaskList from '@/components/Task/TaskList';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
+import SideNavigation from '@/components/Navigation/SideNavigation';
 
 /**
  * Page component for displaying task sets
@@ -23,20 +25,30 @@ const TaskPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Fixed page header */}
-      <div className="bg-white shadow">
-        <div className="container mx-auto py-4 px-4">
-          <h1 className="text-2xl font-bold">Task Sets</h1>
-          <p className="text-gray-500">View and manage your task sets</p>
-        </div>
-      </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-gray-50">
+        <SideNavigation />
+        <SidebarInset>
+          <div className="flex flex-col h-screen">
+            {/* Page header */}
+            <div className="bg-white shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold">Task Sets</h1>
+                  <p className="text-gray-500">View and manage your task sets</p>
+                </div>
+                <SidebarTrigger />
+              </div>
+            </div>
 
-      {/* Main content with TaskList */}
-      <div className="flex-grow container mx-auto">
-        <TaskList />
+            {/* Main content with TaskList */}
+            <div className="flex-grow container mx-auto">
+              <TaskList />
+            </div>
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

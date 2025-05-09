@@ -35,14 +35,13 @@ const TaskList: React.FC = () => {
     sort_order: -1,
   });
 
-  // Use a ref to track if we need to load data
-  const shouldFetchRef = useRef(true);
+  // Track if initial data has been loaded
+  const dataLoadedRef = useRef(false);
 
   // Load task sets
   useEffect(() => {
-    // Only fetch if the filter has changed or on initial load
-    if (!shouldFetchRef.current) {
-      shouldFetchRef.current = true;
+    // Skip if data has already been loaded and filter hasn't changed
+    if (dataLoadedRef.current && !loading) {
       return;
     }
 
@@ -59,6 +58,7 @@ const TaskList: React.FC = () => {
           setTaskSets(response.items);
           setTotalItems(response.total || 0);
           setTotalPages(response.pages || 0);
+          dataLoadedRef.current = true;
         } else {
           console.error('Invalid API response format:', response);
           setTaskSets([]);
@@ -78,28 +78,23 @@ const TaskList: React.FC = () => {
     };
 
     loadTaskSets();
-
-    // After loading, set shouldFetch to false to prevent continuous loading
-    return () => {
-      shouldFetchRef.current = false;
-    };
-  }, [filter, fetchTaskSets]);
+  }, [filter, fetchTaskSets, loading]);
 
   // Handle filter change
   const handleFilterChange = (newFilter: TaskSetFilter) => {
-    shouldFetchRef.current = true; // Ensure we fetch when filter changes
+    dataLoadedRef.current = false; // Reset to force reload
     setFilter(newFilter);
   };
 
   // Handle page change
   const handlePageChange = (page: number) => {
-    shouldFetchRef.current = true; // Ensure we fetch when page changes
+    dataLoadedRef.current = false; // Reset to force reload
     setFilter({ ...filter, page });
   };
 
   // Handle page size change
   const handlePageSizeChange = (limit: number) => {
-    shouldFetchRef.current = true; // Ensure we fetch when page size changes
+    dataLoadedRef.current = false; // Reset to force reload
     setFilter({ ...filter, limit, page: 1 });
   };
 
