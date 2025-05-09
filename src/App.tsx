@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import SlugLogin from "./pages/SlugLogin";
 import DashboardPage from "./pages/DashboardPage";
 import BeginLearningPage from "./pages/Learning/BeginLearning.container";
+import TaskView from "./pages/Learning/TaskView";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/:slug/login" element={<SlugLogin />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/begin-learning" element={<BeginLearningPage />} />
+            <Route path="/begin-learning/task/:taskSetId" element={<TaskView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

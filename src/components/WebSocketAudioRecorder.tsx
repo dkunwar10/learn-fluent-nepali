@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRecorder } from '../hooks/useAudioRecorder';
 import { useAudioWebSocket, ProcessingStatus } from '../hooks/useAudioWebSocket';
 import { useAuth } from '../context/AuthContext';
@@ -47,18 +48,25 @@ const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bufferedChunksRef = useRef<Blob[]>([]);
 
+  // Use navigate for redirection
+  const navigate = useNavigate();
+
   // Handle WebSocket status changes
-  const handleStatusChange = useCallback((status: ProcessingStatus) => {
-    if (status === 'completed') {
-      // In a real implementation, you would extract the task set ID from the response
-      const taskSetId = 'task-123';
+  const handleStatusChange = useCallback((status: ProcessingStatus, taskSetId?: string) => {
+    if (status === 'completed' && taskSetId) {
+      console.log(`Received completed status with task set ID: ${taskSetId}`);
 
       // Notify parent component if needed
       if (onRecordingComplete) {
         onRecordingComplete(taskSetId);
       }
+
+      // Navigate to the task view page
+      setTimeout(() => {
+        navigate(`/begin-learning/task/${taskSetId}`);
+      }, 1500); // Give user a moment to see the completion message
     }
-  }, [onRecordingComplete]);
+  }, [onRecordingComplete, navigate]);
 
   // Use the WebSocket hook
   const {

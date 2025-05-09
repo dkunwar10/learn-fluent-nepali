@@ -8,12 +8,13 @@ export type ProcessingStatus = 'recording_received' | 'verifying' | 'processing'
 export interface WebSocketStatusMessage {
   type: 'status';
   status: string;
+  task_set_id?: string;
 }
 
 interface UseAudioWebSocketOptions {
   token: string | null;
   apiUrl?: string;
-  onStatusChange?: (status: ProcessingStatus) => void;
+  onStatusChange?: (status: ProcessingStatus, taskSetId?: string) => void;
 }
 
 /**
@@ -88,8 +89,9 @@ export function useAudioWebSocket({
 
             case 'completed':
               console.log('Server completed processing the recording');
+              console.log('Task set ID:', data.task_set_id);
               setProcessingStatus('completed');
-              if (onStatusChange) onStatusChange('completed');
+              if (onStatusChange) onStatusChange('completed', data.task_set_id);
               break;
 
             case 'recording_cancelled':

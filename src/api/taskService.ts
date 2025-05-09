@@ -3,6 +3,17 @@ import { UserData } from "../types/User";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/v1";
 
 /**
+ * Interface for file upload response
+ */
+export interface FileUploadResponse {
+  object_name: string;
+  folder: string;
+  url?: string;
+  content_type?: string;
+  size_bytes?: number;
+}
+
+/**
  * Interface for a task item
  */
 export interface Task {
@@ -24,13 +35,21 @@ export interface Task {
  */
 export interface TaskSet {
   id: string;
-  tasks: Task[];
+  tasks?: Task[];
+  task_ids?: string[];
   created_at: string;
   user_id?: string;
   input_type?: string;
   input_content?: string;
   status?: string;
   total_score?: number;
+  input_metadata?: {
+    object_name: string;
+    folder: string;
+    bucket?: string;
+    content_type?: string;
+    size_bytes?: number;
+  };
   [key: string]: any; // Allow for additional properties
 }
 
@@ -123,7 +142,8 @@ export const fetchTaskSet = async (
       },
       body: JSON.stringify({
         set_id: taskSetId,
-        include_tasks: options?.include_tasks ?? false
+        include_tasks: options?.include_tasks || false,
+        include_task_ids: true  // Always include task IDs for better loading
         // fields has a default value in the backend
         // task_fields was removed from the API
       })
@@ -256,6 +276,8 @@ export const submitTaskAnswer = async (
   }
 };
 
+
+
 /**
  * Fetch user's task sets with pagination
  * @param user The authenticated user data
@@ -298,6 +320,38 @@ export const fetchUserTaskSets = async (
     return data;
   } catch (error) {
     console.error("Error fetching user task sets:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch test scores for a task set
+ * @param taskSetId The ID of the task set
+ * @param user The authenticated user data
+ * @returns The test scores data
+ */
+export const fetchTestScores = async (
+  taskSetId: string,
+  user: UserData
+): Promise<any> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/test_score?task_set_id=${taskSetId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${user.tokenType} ${user.token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch test scores: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('Test scores fetched:', data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching test scores:", error);
     throw error;
   }
 };
