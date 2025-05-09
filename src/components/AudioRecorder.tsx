@@ -68,6 +68,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
     onStatusChange: handleStatusChange
   });
 
+  // Log user token for debugging
+  useEffect(() => {
+    console.log('AudioRecorder: User token exists:', user?.token ? 'Yes' : 'No');
+  }, [user?.token]);
+
   // Handle audio chunks from recorder
   const handleAudioChunk = useCallback((chunk: Blob) => {
     if (wsStatus === 'connected') {
@@ -93,12 +98,18 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
   // Start recording with WebSocket
   const startRecording = useCallback(async () => {
     try {
+      console.log('Starting recording...');
+      console.log('User token:', user?.token ? 'Token exists' : 'No token');
+
       // Clear buffered chunks
       bufferedChunksRef.current = [];
       setIsBufferingChunks(false);
 
       // Start WebSocket and recording in parallel
+      console.log('Connecting WebSocket...');
       connectWebSocket();
+
+      console.log('Starting recorder hook...');
       await startRecorderHook();
 
       // Start timer
@@ -106,10 +117,12 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
       recordingTimerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
+
+      console.log('Recording started successfully');
     } catch (err) {
       console.error('Error starting recording:', err);
     }
-  }, [connectWebSocket, startRecorderHook]);
+  }, [connectWebSocket, startRecorderHook, user?.token]);
 
   // Stop recording and send completion message
   const stopRecording = useCallback(() => {

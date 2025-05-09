@@ -9,7 +9,7 @@ import AudioRecorder from '@/components/AudioRecorder';
  * Page component for Begin Learning
  */
 const BeginLearningPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [taskSetId, setTaskSetId] = useState<string | undefined>(undefined);
 
@@ -18,7 +18,11 @@ const BeginLearningPage: React.FC = () => {
     if (!isAuthenticated) {
       navigate('/');
     }
-  }, [isAuthenticated, navigate]);
+
+    // Log authentication status for debugging
+    console.log('Authentication status:', isAuthenticated);
+    console.log('User token exists:', user?.token ? 'Yes' : 'No');
+  }, [isAuthenticated, navigate, user]);
 
   // Handle recording completion
   const handleRecordingComplete = (newTaskSetId?: string) => {
@@ -57,7 +61,14 @@ const BeginLearningPage: React.FC = () => {
                   </div>
                 )}
 
-                <AudioRecorder onRecordingComplete={handleRecordingComplete} />
+                {user?.token ? (
+                  <AudioRecorder onRecordingComplete={handleRecordingComplete} />
+                ) : (
+                  <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center">
+                    <p className="font-semibold">Authentication Error</p>
+                    <p>Please try logging out and logging back in.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
