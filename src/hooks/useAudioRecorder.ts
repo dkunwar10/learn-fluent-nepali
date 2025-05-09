@@ -107,11 +107,12 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
       };
 
       // Handle recording errors
-      mediaRecorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event.error);
-        setError(`Recording error: ${event.error}`);
-        stopRecording();
+      const handleError = (event: Event) => {
+        setError('Error recording audio');
+        console.error('Audio recording error:', event);
       };
+
+      mediaRecorder.onerror = handleError;
 
       // Start recording with 250ms chunks for smoother visualization
       console.log('Starting MediaRecorder with 250ms chunks');
