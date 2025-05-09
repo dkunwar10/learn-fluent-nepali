@@ -56,7 +56,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   // Handle card click
   const handleCardClick = () => {
     if (task && task._id) {
-      navigate(`/tasks/${task._id}`);
+      // Navigate to task detail page and pass state to indicate we came from tasks list
+      navigate(`/tasks/${task._id}`, { state: { from: 'tasks' } });
     }
   };
 
@@ -75,42 +76,46 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   }
 
   return (
-    <Card
-      className="w-full hover:shadow-md transition-shadow cursor-pointer"
+    <div
+      className="bg-white border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
       onClick={handleCardClick}
     >
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-bold">{task.input_content || 'Untitled Task'}</CardTitle>
-          <Badge className={getStatusColor(task.status)}>
-            {task.status ? task.status.replace(/_/g, ' ') : 'Unknown'}
-          </Badge>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-lg font-bold">Test TODO:</h3>
+          <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+            {task.status ? task.status.replace(/_/g, ' ') : 'pending'}
+          </span>
         </div>
-        <CardDescription className="text-sm text-gray-500">
-          Created: {formatDate(task.created_at)}
-        </CardDescription>
-      </CardHeader>
 
-      <CardContent className="pb-2">
-        <p className="text-sm line-clamp-2 mb-3">
+        <p className="text-sm text-gray-500 mb-2">
+          Created: {formatDate(task.created_at)}
+        </p>
+
+        <p className="text-sm font-medium mb-4">
           {task.input_type === 'audio' ? 'Audio Task' : task.input_type}
         </p>
 
-        <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
-          <span>Completion</span>
-          <span>{completionPercentage}%</span>
+        <div className="mb-1">
+          <div className="text-xs text-gray-500 mb-1">Completion</div>
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+            <div
+              className="bg-orange-500 h-2 rounded-full"
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
         </div>
 
-        <Progress value={completionPercentage} className="h-2" />
-      </CardContent>
-
-      <CardFooter className="pt-2 flex justify-between text-sm">
-        <div>Tasks: {completedCount || 0}/{taskCount || 0}</div>
-        {task.scored !== undefined && task.max_score !== undefined && (
-          <div>Score: {task.scored}/{task.max_score}</div>
-        )}
-      </CardFooter>
-    </Card>
+        <div className="flex justify-between text-sm mt-4">
+          <div>Tasks: {completedCount || 0}/{taskCount || 0}</div>
+          {task.scored !== undefined && task.max_score !== undefined ? (
+            <div>Score: {task.scored || 0}/{task.max_score || 60}</div>
+          ) : (
+            <div>Score: 0/60</div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

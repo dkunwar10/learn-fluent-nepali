@@ -34,7 +34,7 @@ const TaskPage: React.FC = () => {
             <div className="bg-white shadow p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold">Task Sets</h1>
+                  <h1 className="text-2xl font-bold text-purple-700">Task Sets</h1>
                   <p className="text-gray-500">View and manage your task sets</p>
                 </div>
                 <SidebarTrigger />

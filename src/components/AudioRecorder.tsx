@@ -30,11 +30,11 @@ interface AudioRecorderProps {
 const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   // State for recording time
   const [recordingTime, setRecordingTime] = useState<number>(0);
   const [isBufferingChunks, setIsBufferingChunks] = useState<boolean>(false);
-  
+
   // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -46,10 +46,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
       if (onRecordingComplete) {
         onRecordingComplete(taskSetId);
       }
-      
+
       // Navigate to task view
       setTimeout(() => {
-        navigate(`/begin-learning/task/${taskSetId}`);
+        navigate(`/tasks/${taskSetId}`, { state: { from: 'learning' } });
       }, 1500);
     }
   }, [onRecordingComplete, navigate]);
@@ -100,7 +100,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
       // Start WebSocket and recording in parallel
       connectWebSocket();
       await startRecorderHook();
-      
+
       // Start timer
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => {
@@ -117,16 +117,16 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
     if (wsStatus !== 'connected') {
       connectWebSocket();
     }
-    
+
     // Stop recorder
     stopRecorderHook();
-    
+
     // Clear timer
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
-    
+
     // Send completion message after a short delay
     setTimeout(() => {
       sendRecordingCompleted();
@@ -137,17 +137,17 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
   const cancelRecording = useCallback(() => {
     // Cancel recorder
     cancelRecorderHook();
-    
+
     // Clear timer
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
-    
+
     // Clear buffered chunks
     bufferedChunksRef.current = [];
     setIsBufferingChunks(false);
-    
+
     // Send cancellation message
     if (wsStatus === 'connected') {
       sendRecordingCancelled();
@@ -161,7 +161,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) =>
       bufferedChunksRef.current.forEach(chunk => {
         sendAudioChunk(chunk);
       });
-      
+
       // Clear buffer
       bufferedChunksRef.current = [];
       setIsBufferingChunks(false);

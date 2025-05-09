@@ -6,16 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import SideNavigation from '@/components/Navigation/SideNavigation';
-import { LogOut, Bell } from "lucide-react";
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
 
   return (
     <SidebarProvider>
@@ -30,32 +24,7 @@ const Dashboard: React.FC = () => {
                   <h1 className="text-2xl font-bold text-nepali-maroon">Dashboard</h1>
                   <p className="text-gray-500">Welcome back, {user?.username}!</p>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-                  </Button>
-
-                  <div className="flex items-center">
-                    <div className="mr-2 text-right hidden sm:block">
-                      <p className="text-sm font-medium">{user?.username}</p>
-                      <p className="text-xs text-gray-500">{user?.role}</p>
-                    </div>
-                    <div className="h-8 w-8 rounded-full bg-nepali-red flex items-center justify-center text-white">
-                      {user?.username?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="text-gray-500 hover:text-red-500"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                  <SidebarTrigger />
-                </div>
+                <SidebarTrigger />
               </div>
             </div>
 

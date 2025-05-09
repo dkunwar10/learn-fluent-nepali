@@ -123,7 +123,7 @@ const TaskList: React.FC = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-120px)]">
       {/* Fixed Header - Filter section */}
-      <div className="sticky top-0 z-10 bg-gray-50 pt-4 px-4">
+      <div className="sticky top-0 z-10 bg-white pt-4 px-4">
         <TaskFilter filter={filter} onFilterChange={handleFilterChange} />
 
         {/* Error message */}
@@ -138,7 +138,7 @@ const TaskList: React.FC = () => {
 
       {/* Scrollable Content Area */}
       <div className="flex-grow overflow-y-auto px-4 py-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loading ? (
             renderSkeletons()
           ) : taskSets && taskSets.length > 0 ? (

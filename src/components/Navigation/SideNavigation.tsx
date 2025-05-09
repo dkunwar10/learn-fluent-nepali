@@ -37,15 +37,15 @@ const SideNavigation: React.FC = () => {
 
   return (
     <Sidebar>
-      <SidebarHeader className="flex items-center justify-center py-4">
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-2">
-            <div className="w-10 h-10 rounded-full bg-nepali-red flex items-center justify-center">
-              <span className="text-white font-bold">NP</span>
-            </div>
+      <SidebarHeader className="flex items-center py-4 px-4">
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-full bg-nepali-red flex items-center justify-center">
+            <span className="text-white font-bold">NP</span>
           </div>
-          <h2 className="text-xl font-bold text-sidebar-foreground">Nepali Learning</h2>
-          <p className="text-xs text-sidebar-foreground/70 mt-1">Learn Fluent Nepali</p>
+          <div className="ml-3">
+            <h2 className="text-lg font-bold text-sidebar-foreground">Nepali Learning</h2>
+            <p className="text-xs text-sidebar-foreground/70">Learn Fluent Nepali</p>
+          </div>
         </div>
       </SidebarHeader>
 
@@ -74,42 +74,6 @@ const SideNavigation: React.FC = () => {
               <Link to="/tasks">
                 <LayoutList className="size-4" />
                 <span>Tasks</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/lessons')} tooltip="Lessons">
-              <Link to="/lessons">
-                <BookOpen className="size-4" />
-                <span>Lessons</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/progress')} tooltip="Progress">
-              <Link to="/progress">
-                <BarChart2 className="size-4" />
-                <span>Progress</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/profile')} tooltip="Profile">
-              <Link to="/profile">
-                <User className="size-4" />
-                <span>Profile</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
-              <Link to="/settings">
-                <Settings className="size-4" />
-                <span>Settings</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

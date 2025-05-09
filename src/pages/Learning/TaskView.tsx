@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchTaskSet, fetchTask, fetchTestScores, TaskSet, Task } from '../../api/taskService';
 import { getFileUrl } from '../../api/fileService';
 import TaskItem from '../../components/TaskItem.component';
+import TaskViewLayout from '../Task/TaskViewLayout';
 
 const TaskView: React.FC = () => {
   const { taskSetId } = useParams<{ taskSetId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated } = useAuth();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -316,169 +318,172 @@ const TaskView: React.FC = () => {
     fetchScores();
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
 
-  if (error) {
+
+  // Render the content inside the layout
+  const renderContent = () => {
     return (
       <div className="container mx-auto p-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-          <p>{error}</p>
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            {/* Score display */}
+            <div className="flex items-center ml-auto">
+              {loadingScores ? (
+                <div className="flex items-center text-gray-500">
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500 mr-2"></div>
+                  <span>Loading scores...</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-end">
+                  <div className="text-lg font-semibold text-purple-700">
+                    Score: {totalScore}/{scores?.max_score || maxScore}
+                  </div>
+                  <div className="w-32 bg-gray-200 rounded-full h-2.5 mt-1">
+                    <div
+                      className="bg-purple-600 h-2.5 rounded-full"
+                      style={{ width: `${scores?.max_score > 0 ? (totalScore / scores.max_score) * 100 : maxScore > 0 ? (totalScore / maxScore) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Audio preview section */}
+          {audioPreviewUrl ? (
+            <div className="mt-4 mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
+              <h3 className="text-lg font-medium mb-2">Your Recording:</h3>
+              <audio controls className="w-full">
+                <source src={audioPreviewUrl} type="audio/mpeg" />
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          ) : taskSet?.input_metadata?.object_name ? (
+            <div className="mt-4 mb-6 p-4 bg-gray-100 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-medium mb-2">Audio Preview:</h3>
+              <p className="text-sm text-gray-600">Loading audio preview...</p>
+              <div className="animate-pulse rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500 mx-auto mt-2"></div>
+            </div>
+          ) : null}
+
+          <div className="flex items-center mt-2">
+            <div className="flex space-x-2 mb-4">
+              {taskSet?.tasks?.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-3 h-3 rounded-full ${
+                    index === currentTaskIndex
+                      ? 'bg-purple-600'
+                      : index < currentTaskIndex
+                        ? 'bg-purple-300'
+                        : index < tasks.length
+                          ? 'bg-gray-200'
+                          : 'bg-gray-300'
+                  }`}
+                ></div>
+              ))}
+              {loadingTasks && (
+                <div className="w-3 h-3 rounded-full bg-gray-300 animate-pulse ml-2"></div>
+              )}
+            </div>
+            <div className="ml-auto text-sm text-gray-500 flex items-center">
+              {loadingTasks && (
+                <div className="mr-2 w-4 h-4 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+              )}
+
+              {/* Task score indicator */}
+              {scores && scores.tasks && tasks[currentTaskIndex] && (
+                <div className="mr-3 flex items-center">
+                  <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                    scores.tasks.find((t: any) => t.task_id === (tasks[currentTaskIndex].id || tasks[currentTaskIndex]._id))?.score > 0
+                      ? 'bg-green-500'
+                      : 'bg-gray-300'
+                  }`}></span>
+                  <span>
+                    {(() => {
+                      const taskScore = scores.tasks.find((t: any) =>
+                        t.task_id === (tasks[currentTaskIndex].id || tasks[currentTaskIndex]._id)
+                      );
+                      return `${taskScore?.score || 0} pt`;
+                    })()}
+                  </span>
+                </div>
+              )}
+
+              Task {currentTaskIndex + 1} of {taskSet?.tasks?.length || 0}
+            </div>
+          </div>
+        </div>
+
+        {renderCurrentTask()}
+
+        <div className="mt-6 flex justify-between">
           <button
-            className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-            onClick={() => navigate('/dashboard')}
+            className={`px-4 py-2 rounded-lg ${
+              currentTaskIndex > 0
+                ? 'bg-gray-200 hover:bg-gray-300'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+            onClick={goToPreviousTask}
+            disabled={currentTaskIndex === 0 || loadingTasks}
           >
-            Return to Dashboard
+            {loadingTasks ? (
+              <span className="flex items-center">
+                <span className="w-4 h-4 mr-2 border-t-2 border-b-2 border-gray-400 rounded-full animate-spin"></span>
+                Previous
+              </span>
+            ) : (
+              'Previous'
+            )}
+          </button>
+
+          <button
+            className={`px-4 py-2 rounded-lg ${
+              taskSet?.tasks && currentTaskIndex < taskSet.tasks.length - 1
+                ? loadingTasks
+                  ? 'bg-purple-400 text-white'
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+                : 'bg-purple-300 text-white cursor-not-allowed'
+            }`}
+            onClick={goToNextTask}
+            disabled={!taskSet?.tasks || currentTaskIndex >= taskSet.tasks.length - 1 || loadingTasks}
+          >
+            {loadingTasks ? (
+              <span className="flex items-center">
+                <span className="w-4 h-4 mr-2 border-t-2 border-b-2 border-white rounded-full animate-spin"></span>
+                Loading
+              </span>
+            ) : (
+              'Next'
+            )}
           </button>
         </div>
       </div>
     );
-  }
+  };
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-700">Learning Tasks</h1>
-
-          {/* Score display */}
-          <div className="flex items-center">
-            {loadingScores ? (
-              <div className="flex items-center text-gray-500">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500 mr-2"></div>
-                <span>Loading scores...</span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-end">
-                <div className="text-lg font-semibold text-purple-700">
-                  Score: {totalScore}/{scores?.max_score || maxScore}
-                </div>
-                <div className="w-32 bg-gray-200 rounded-full h-2.5 mt-1">
-                  <div
-                    className="bg-purple-600 h-2.5 rounded-full"
-                    style={{ width: `${scores?.max_score > 0 ? (totalScore / scores.max_score) * 100 : maxScore > 0 ? (totalScore / maxScore) * 100 : 0}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
+    <TaskViewLayout>
+      {loading ? (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+      ) : error ? (
+        <div className="container mx-auto p-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+            <p>{error}</p>
+            <button
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+              onClick={() => navigate('/dashboard')}
+            >
+              Return to Dashboard
+            </button>
           </div>
         </div>
-
-        {/* Audio preview section */}
-        {audioPreviewUrl ? (
-          <div className="mt-4 mb-6 p-4 bg-gray-50 rounded-lg shadow-sm">
-            <h3 className="text-lg font-medium mb-2">Your Recording:</h3>
-            <audio controls className="w-full">
-              <source src={audioPreviewUrl} type="audio/mpeg" />
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-        ) : taskSet?.input_metadata?.object_name ? (
-          <div className="mt-4 mb-6 p-4 bg-gray-100 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-medium mb-2">Audio Preview:</h3>
-            <p className="text-sm text-gray-600">Loading audio preview...</p>
-            <div className="animate-pulse rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500 mx-auto mt-2"></div>
-          </div>
-        ) : null}
-
-        <div className="flex items-center mt-2">
-          <div className="flex space-x-2 mb-4">
-            {taskSet?.tasks?.map((_, index) => (
-              <div
-                key={index}
-                className={`w-3 h-3 rounded-full ${
-                  index === currentTaskIndex
-                    ? 'bg-purple-600'
-                    : index < currentTaskIndex
-                      ? 'bg-purple-300'
-                      : index < tasks.length
-                        ? 'bg-gray-200'
-                        : 'bg-gray-300'
-                }`}
-              ></div>
-            ))}
-            {loadingTasks && (
-              <div className="w-3 h-3 rounded-full bg-gray-300 animate-pulse ml-2"></div>
-            )}
-          </div>
-          <div className="ml-auto text-sm text-gray-500 flex items-center">
-            {loadingTasks && (
-              <div className="mr-2 w-4 h-4 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
-            )}
-
-            {/* Task score indicator */}
-            {scores && scores.tasks && tasks[currentTaskIndex] && (
-              <div className="mr-3 flex items-center">
-                <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                  scores.tasks.find((t: any) => t.task_id === (tasks[currentTaskIndex].id || tasks[currentTaskIndex]._id))?.score > 0
-                    ? 'bg-green-500'
-                    : 'bg-gray-300'
-                }`}></span>
-                <span>
-                  {(() => {
-                    const taskScore = scores.tasks.find((t: any) =>
-                      t.task_id === (tasks[currentTaskIndex].id || tasks[currentTaskIndex]._id)
-                    );
-                    return `${taskScore?.score || 0} pt`;
-                  })()}
-                </span>
-              </div>
-            )}
-
-            Task {currentTaskIndex + 1} of {taskSet?.tasks?.length || 0}
-          </div>
-        </div>
-      </div>
-
-      {renderCurrentTask()}
-
-      <div className="mt-6 flex justify-between">
-        <button
-          className={`px-4 py-2 rounded-lg ${
-            currentTaskIndex > 0
-              ? 'bg-gray-200 hover:bg-gray-300'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-          onClick={goToPreviousTask}
-          disabled={currentTaskIndex === 0 || loadingTasks}
-        >
-          {loadingTasks ? (
-            <span className="flex items-center">
-              <span className="w-4 h-4 mr-2 border-t-2 border-b-2 border-gray-400 rounded-full animate-spin"></span>
-              Previous
-            </span>
-          ) : (
-            'Previous'
-          )}
-        </button>
-
-        <button
-          className={`px-4 py-2 rounded-lg ${
-            taskSet?.tasks && currentTaskIndex < taskSet.tasks.length - 1
-              ? loadingTasks
-                ? 'bg-purple-400 text-white'
-                : 'bg-purple-600 text-white hover:bg-purple-700'
-              : 'bg-purple-300 text-white cursor-not-allowed'
-          }`}
-          onClick={goToNextTask}
-          disabled={!taskSet?.tasks || currentTaskIndex >= taskSet.tasks.length - 1 || loadingTasks}
-        >
-          {loadingTasks ? (
-            <span className="flex items-center">
-              <span className="w-4 h-4 mr-2 border-t-2 border-b-2 border-white rounded-full animate-spin"></span>
-              Loading
-            </span>
-          ) : (
-            'Next'
-          )}
-        </button>
-      </div>
-    </div>
+      ) : (
+        renderContent()
+      )}
+    </TaskViewLayout>
   );
 };
 
