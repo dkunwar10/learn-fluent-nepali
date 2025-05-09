@@ -7,9 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import SlugLogin from "./pages/SlugLogin";
 import DashboardPage from "./pages/DashboardPage";
-import BeginLearningPage from "./pages/BeginLearningPage";
-import BeginLearningPageNew from "./pages/beginlearning";
-import TaskView from "./pages/beginlearning/TaskView";
+import BeginLearningPage from "./pages/Learning/BeginLearning.container";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -27,8 +25,6 @@ const App = () => (
             <Route path="/:slug/login" element={<SlugLogin />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/begin-learning" element={<BeginLearningPage />} />
-            <Route path="/beginlearning" element={<BeginLearningPageNew />} />
-            <Route path="/beginlearning/task/:taskSetId" element={<TaskView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

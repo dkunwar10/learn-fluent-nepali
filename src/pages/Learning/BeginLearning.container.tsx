@@ -1,23 +1,23 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import BeginLearning from "@/components/BeginLearning";
+import AudioRecorder from "@/pages/Learning/BeginLearning.component";
 
 const BeginLearningPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
-  
+
   if (!isAuthenticated) {
     return null;
   }
-  
-  return <BeginLearning />;
+
+  return <AudioRecorder />;
 };
 
 export default BeginLearningPage;
