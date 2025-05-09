@@ -33,6 +33,11 @@ const TaskList: React.FC = () => {
     limit: 10,
     sort_by: 'created_at',
     sort_order: -1,
+    // Initialize with empty values for other filters
+    status: undefined,
+    search: undefined,
+    start_date: undefined,
+    end_date: undefined
   });
 
   // Track if initial data has been loaded

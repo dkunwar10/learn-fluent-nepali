@@ -7,8 +7,8 @@ export interface TaskSetFilter {
   sort_order: number;
   status?: string;
   search?: string;
-  date_from?: string;
-  date_to?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface TaskSet {
@@ -47,7 +47,9 @@ export interface ApiTaskSetResponse {
     page: number;
     limit: number;
     total: number;
-    total_pages: number;
+    total_pages?: number;
+    has_more?: boolean;
+    count?: number;
   };
 }
 
@@ -71,11 +73,17 @@ export const useTaskListService = () => {
       const queryParams = new URLSearchParams();
       Object.entries(filter).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
-          queryParams.append(key, value.toString());
+          // Ensure sort_order is passed as a number (1 or -1)
+          if (key === 'sort_order') {
+            queryParams.append(key, value.toString());
+            console.log(`Setting sort_order to ${value} (${typeof value})`);
+          } else {
+            queryParams.append(key, value.toString());
+          }
         }
       });
 
-      const url = `${apiUrl}/tasks/user/task-sets?${queryParams.toString()}`;
+      const url = `${apiUrl}/tasks/task-sets/filtered?${queryParams.toString()}`;
       console.log('Fetching task sets from:', url, 'with filter:', filter);
 
       // Make API request
@@ -112,9 +120,9 @@ export const useTaskListService = () => {
       const transformedResponse: TaskSetResponse = {
         items: apiResponse.data,
         total: apiResponse.meta.total,
-        page: filter.page, // Use the requested page number
-        limit: filter.limit, // Use the requested limit
-        pages: Math.ceil(apiResponse.meta.total / filter.limit) // Calculate total pages
+        page: apiResponse.meta.page || filter.page,
+        limit: apiResponse.meta.limit || filter.limit,
+        pages: apiResponse.meta.total_pages || Math.ceil(apiResponse.meta.total / filter.limit)
       };
 
       return transformedResponse;
