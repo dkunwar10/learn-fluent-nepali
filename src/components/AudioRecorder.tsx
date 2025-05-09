@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecorder } from '../hooks/useAudioRecorder';
-import { useAudioWebSocket, ProcessingStatus } from '../hooks/useAudioWebSocket';
-import { useAuth } from '../context/AuthContext';
+import { useRecorder } from '@/hooks/useAudioRecorder';
+import { useAudioWebSocket, ProcessingStatus } from '@/hooks/useAudioWebSocket';
+import { useAuth } from '@/context/AuthContext';
 
-// Define custom animation styles
+// Define animation keyframes for audio visualization
 const animationStyles = `
   @keyframes pulse-slow {
     0%, 100% { transform: scaleY(1); }
@@ -18,57 +18,43 @@ const animationStyles = `
     0%, 100% { transform: scaleY(1); }
     50% { transform: scaleY(2); }
   }
-  .animate-pulse-slow {
-    animation: pulse-slow 2.5s infinite;
-  }
-  .animate-pulse-medium {
-    animation: pulse-medium 1.8s infinite;
-  }
-  .animate-pulse-fast {
-    animation: pulse-fast 1.2s infinite;
-  }
+  .animate-pulse-slow { animation: pulse-slow 2.5s infinite; }
+  .animate-pulse-medium { animation: pulse-medium 1.8s infinite; }
+  .animate-pulse-fast { animation: pulse-fast 1.2s infinite; }
 `;
 
-interface WebSocketAudioRecorderProps {
+interface AudioRecorderProps {
   onRecordingComplete?: (taskSetId?: string) => void;
 }
 
-const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
-  onRecordingComplete
-}) => {
-  // Get auth token
+const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplete }) => {
   const { user } = useAuth();
-
-  // State for recording time and buffering
+  const navigate = useNavigate();
+  
+  // State for recording time
   const [recordingTime, setRecordingTime] = useState<number>(0);
   const [isBufferingChunks, setIsBufferingChunks] = useState<boolean>(false);
-
-  // Ref for audio element, timer, and chunk buffer
+  
+  // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bufferedChunksRef = useRef<Blob[]>([]);
 
-  // Use navigate for redirection
-  const navigate = useNavigate();
-
   // Handle WebSocket status changes
   const handleStatusChange = useCallback((status: ProcessingStatus, taskSetId?: string) => {
     if (status === 'completed' && taskSetId) {
-      console.log(`Received completed status with task set ID: ${taskSetId}`);
-
-      // Notify parent component if needed
       if (onRecordingComplete) {
         onRecordingComplete(taskSetId);
       }
-
-      // Navigate to the task view page
+      
+      // Navigate to task view
       setTimeout(() => {
         navigate(`/begin-learning/task/${taskSetId}`);
-      }, 1500); // Give user a moment to see the completion message
+      }, 1500);
     }
   }, [onRecordingComplete, navigate]);
 
-  // Use the WebSocket hook
+  // Initialize WebSocket hook
   const {
     wsStatus,
     processingStatus,
@@ -84,19 +70,15 @@ const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
 
   // Handle audio chunks from recorder
   const handleAudioChunk = useCallback((chunk: Blob) => {
-    // If WebSocket is connected, send the chunk immediately
     if (wsStatus === 'connected') {
-      console.log(`Sending audio chunk of size: ${chunk.size} bytes`);
       sendAudioChunk(chunk);
     } else {
-      // Otherwise, buffer the chunk until WebSocket is connected
-      console.log(`Buffering audio chunk of size: ${chunk.size} bytes (WebSocket status: ${wsStatus})`);
       bufferedChunksRef.current.push(chunk);
       setIsBufferingChunks(true);
     }
   }, [wsStatus, sendAudioChunk]);
 
-  // Use the recorder hook with chunk callback
+  // Initialize recorder hook
   const {
     recording,
     audioUrl,
@@ -111,99 +93,75 @@ const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
   // Start recording with WebSocket
   const startRecording = useCallback(async () => {
     try {
-      console.log('Starting recording and WebSocket connection in parallel');
-
-      // Clear any existing buffered chunks
+      // Clear buffered chunks
       bufferedChunksRef.current = [];
       setIsBufferingChunks(false);
 
-      // Start WebSocket connection and recording in parallel
-      connectWebSocket(); // Don't wait for this to complete
-      const recordPromise = startRecorderHook();
-
-      // Wait for recording to start (don't wait for WebSocket to connect)
-      await recordPromise;
-      console.log('Recording started successfully');
-
-      // Start timer for recording duration
+      // Start WebSocket and recording in parallel
+      connectWebSocket();
+      await startRecorderHook();
+      
+      // Start timer
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
-
-      // Log WebSocket connection status
-      console.log(`WebSocket connection status: ${wsStatus}`);
-
     } catch (err) {
-      console.error('Error starting recording with WebSocket:', err);
+      console.error('Error starting recording:', err);
     }
-  }, [connectWebSocket, startRecorderHook, wsStatus]);
+  }, [connectWebSocket, startRecorderHook]);
 
   // Stop recording and send completion message
   const stopRecording = useCallback(() => {
-    console.log('Stop button clicked, preparing to stop recording');
-
-    // First, ensure we're in a connected state before stopping
+    // Ensure WebSocket is connected
     if (wsStatus !== 'connected') {
-      console.warn('WebSocket not connected, attempting to connect before stopping');
       connectWebSocket();
     }
-
-    // Stop the recorder - this will trigger the final ondataavailable event
-    console.log('Stopping recorder to get final chunk');
+    
+    // Stop recorder
     stopRecorderHook();
-
-    // Clear recording timer
+    
+    // Clear timer
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
-
-    // Wait a bit to ensure the final chunk is processed, then send completion message
+    
+    // Send completion message after a short delay
     setTimeout(() => {
-      console.log('Sending recording_completed message');
       sendRecordingCompleted();
     }, 500);
-
   }, [stopRecorderHook, sendRecordingCompleted, wsStatus, connectWebSocket]);
 
   // Cancel recording
   const cancelRecording = useCallback(() => {
-    console.log('Cancel button clicked, cancelling recording');
-
-    // Cancel the recorder
+    // Cancel recorder
     cancelRecorderHook();
-
-    // Clear recording timer
+    
+    // Clear timer
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
-
-    // Clear any buffered chunks
+    
+    // Clear buffered chunks
     bufferedChunksRef.current = [];
     setIsBufferingChunks(false);
-
-    // Send recording cancelled message
+    
+    // Send cancellation message
     if (wsStatus === 'connected') {
-      console.log('Sending recording_cancelled message');
       sendRecordingCancelled();
-    } else {
-      console.warn(`Cannot send recording_cancelled: WebSocket status is ${wsStatus}`);
     }
   }, [cancelRecorderHook, sendRecordingCancelled, wsStatus]);
 
   // Send buffered chunks when WebSocket connects
   useEffect(() => {
-    // If WebSocket is connected and we have buffered chunks, send them
     if (wsStatus === 'connected' && isBufferingChunks && bufferedChunksRef.current.length > 0) {
-      console.log(`WebSocket connected, sending ${bufferedChunksRef.current.length} buffered chunks`);
-
       // Send all buffered chunks
       bufferedChunksRef.current.forEach(chunk => {
         sendAudioChunk(chunk);
       });
-
+      
       // Clear buffer
       bufferedChunksRef.current = [];
       setIsBufferingChunks(false);
@@ -215,7 +173,6 @@ const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
     return () => {
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
       }
       closeConnection();
     };
@@ -230,7 +187,7 @@ const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
 
   return (
     <div className="flex flex-col items-center w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
-      {/* Add animation styles */}
+      {/* Animation styles */}
       <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
 
       {/* Header */}
@@ -277,17 +234,11 @@ const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
 
       {/* Main content area */}
       <div className="w-full border-2 border-dashed border-purple-300 rounded-lg p-6 flex flex-col items-center justify-center">
-        {/* Show audio player if there's audio */}
         {audioUrl ? (
           <div className="w-full">
-            {/* Audio player controls */}
+            {/* Audio player */}
             <div className="flex items-center justify-center mb-4">
-              <audio
-                ref={audioRef}
-                src={audioUrl}
-                controls
-                className="w-full"
-              />
+              <audio ref={audioRef} src={audioUrl} controls className="w-full" />
             </div>
 
             {/* Record new button */}
@@ -381,4 +332,4 @@ const WebSocketAudioRecorder: React.FC<WebSocketAudioRecorderProps> = ({
   );
 };
 
-export default WebSocketAudioRecorder;
+export default AudioRecorder;

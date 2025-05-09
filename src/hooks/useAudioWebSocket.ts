@@ -1,19 +1,33 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-// WebSocket status types
+/**
+ * WebSocket connection status
+ */
 export type WebSocketStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+
+/**
+ * Audio processing status from server
+ */
 export type ProcessingStatus = 'recording_received' | 'verifying' | 'processing' | 'completed' | 'recording_cancelled' | null;
 
-// Interface for WebSocket status messages
+/**
+ * WebSocket status message interface
+ */
 export interface WebSocketStatusMessage {
   type: 'status';
   status: string;
   task_set_id?: string;
 }
 
+/**
+ * Options for the useAudioWebSocket hook
+ */
 interface UseAudioWebSocketOptions {
+  /** Authentication token */
   token: string | null;
+  /** API URL */
   apiUrl?: string;
+  /** Callback for status changes */
   onStatusChange?: (status: ProcessingStatus, taskSetId?: string) => void;
 }
 
@@ -25,21 +39,22 @@ export function useAudioWebSocket({
   apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/v1",
   onStatusChange
 }: UseAudioWebSocketOptions) {
-  // WebSocket connection status
+  // State
   const [wsStatus, setWsStatus] = useState<WebSocketStatus>('disconnected');
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>(null);
 
   // WebSocket reference
   const webSocketRef = useRef<WebSocket | null>(null);
 
-  // Connect to WebSocket
+  /**
+   * Connect to WebSocket server
+   */
   const connectWebSocket = useCallback(() => {
     if (!token) {
-      console.error('User not authenticated');
       return null;
     }
 
-    // Close existing connection if any
+    // Close existing connection
     if (webSocketRef.current && webSocketRef.current.readyState === WebSocket.OPEN) {
       webSocketRef.current.close();
     }
@@ -52,70 +67,56 @@ export function useAudioWebSocket({
 
     // Set up event handlers
     ws.onopen = () => {
-      console.log('WebSocket connection established');
       // Wait for server to send "connected" status
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('WebSocket message received:', data);
 
         if (data.type === 'status') {
-          // Handle different status messages from server
+          // Handle status messages
           switch (data.status) {
             case 'connected':
-              console.log('Server authenticated user and is ready');
               setWsStatus('connected');
               break;
 
             case 'recording_received':
-              console.log('Server received the recording');
               setProcessingStatus('recording_received');
               if (onStatusChange) onStatusChange('recording_received');
               break;
 
             case 'verifying':
-              console.log('Server is verifying the recording');
               setProcessingStatus('verifying');
               if (onStatusChange) onStatusChange('verifying');
               break;
 
             case 'processing':
-              console.log('Server is processing the recording');
               setProcessingStatus('processing');
               if (onStatusChange) onStatusChange('processing');
               break;
 
             case 'completed':
-              console.log('Server completed processing the recording');
-              console.log('Task set ID:', data.task_set_id);
               setProcessingStatus('completed');
               if (onStatusChange) onStatusChange('completed', data.task_set_id);
               break;
 
             case 'recording_cancelled':
-              console.log('Server confirmed recording cancellation');
               setProcessingStatus('recording_cancelled');
               if (onStatusChange) onStatusChange('recording_cancelled');
               break;
-
-            default:
-              console.log(`Received status: ${data.status}`);
           }
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        // Ignore parsing errors
       }
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    ws.onerror = () => {
       setWsStatus('error');
     };
 
     ws.onclose = () => {
-      console.log('WebSocket connection closed');
       setWsStatus('disconnected');
     };
 
@@ -123,21 +124,22 @@ export function useAudioWebSocket({
     return ws;
   }, [token, apiUrl, onStatusChange]);
 
-  // Send audio chunk to WebSocket
+  /**
+   * Send audio chunk to WebSocket
+   */
   const sendAudioChunk = useCallback((chunk: Blob): void => {
     if (webSocketRef.current && webSocketRef.current.readyState === WebSocket.OPEN) {
       try {
         webSocketRef.current.send(chunk);
-        console.log(`Successfully sent audio chunk of size: ${chunk.size} bytes`);
       } catch (error) {
-        console.error('Error sending audio chunk:', error);
+        // Ignore send errors
       }
-    } else {
-      console.warn(`WebSocket not connected (state: ${webSocketRef.current?.readyState}), cannot send audio chunk`);
     }
   }, []);
 
-  // Send status message to WebSocket
+  /**
+   * Send status message to WebSocket
+   */
   const sendStatusMessage = useCallback((status: string): void => {
     if (webSocketRef.current && webSocketRef.current.readyState === WebSocket.OPEN) {
       try {
@@ -146,32 +148,35 @@ export function useAudioWebSocket({
           status: status
         };
         webSocketRef.current.send(JSON.stringify(message));
-        console.log(`Successfully sent status message: ${status}`);
       } catch (error) {
-        console.error(`Error sending status message (${status}):`, error);
+        // Ignore send errors
       }
-    } else {
-      console.warn(`WebSocket not connected (state: ${webSocketRef.current?.readyState}), cannot send status: ${status}`);
     }
   }, []);
 
-  // Send recording completed message
+  /**
+   * Send recording completed message
+   */
   const sendRecordingCompleted = useCallback((): void => {
     sendStatusMessage('recording_completed');
   }, [sendStatusMessage]);
 
-  // Send recording cancelled message
+  /**
+   * Send recording cancelled message
+   */
   const sendRecordingCancelled = useCallback((): void => {
     sendStatusMessage('recording_cancelled');
   }, [sendStatusMessage]);
 
-  // Send recording end message and close connection
+  /**
+   * Close WebSocket connection
+   */
   const closeConnection = useCallback((): void => {
     if (webSocketRef.current) {
-      // Send recording_end status message to tell server to close the connection
+      // Send recording_end status message
       sendStatusMessage('recording_end');
 
-      // Give the server a moment to process the message before closing
+      // Close after a short delay
       setTimeout(() => {
         if (webSocketRef.current) {
           webSocketRef.current.close();

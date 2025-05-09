@@ -59,7 +59,27 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-       
+        <Card className="shadow-md hover:shadow-lg transition-shadow">
+          <CardHeader className="bg-purple-500 bg-opacity-10 pb-2">
+            <CardTitle className="text-xl text-purple-700">Task Sets</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <p className="text-gray-600">
+              View and manage your task sets. Track your progress on various learning tasks.
+            </p>
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                className="border-purple-500 text-purple-700 hover:bg-purple-500 hover:text-white"
+                onClick={() => navigate("/tasks")}
+              >
+                View Tasks
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+
       </div>
     </div>
   );

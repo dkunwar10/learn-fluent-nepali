@@ -1,39 +1,53 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+/**
+ * Options for the useRecorder hook
+ */
 interface UseRecorderOptions {
+  /** Callback function that receives audio chunks as they become available */
   onDataAvailable?: (chunk: Blob) => void;
 }
 
+/**
+ * Hook for recording audio with MediaRecorder API
+ */
 export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
+  // State
   const [recording, setRecording] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
+  // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Helper function to check browser compatibility
-  const checkBrowserCompatibility = () => {
+  /**
+   * Check if browser supports audio recording
+   */
+  const checkBrowserCompatibility = useCallback(() => {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-  };
+  }, []);
 
-  const startRecording = async () => {
+  /**
+   * Start audio recording
+   */
+  const startRecording = useCallback(async () => {
     if (recording) return;
 
-    // Check compatibility first
+    // Check compatibility
     if (!checkBrowserCompatibility()) {
       setError("Your browser doesn't support audio recording");
       return;
     }
 
-    // Clear previous recording
+    // Reset state
     setAudioUrl(null);
     setError(null);
     audioChunksRef.current = [];
 
     try {
-      // Request microphone access with proper constraints
+      // Get microphone access
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -44,28 +58,28 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
 
       setStream(mediaStream);
 
-      // Create media recorder with proper mime type
+      // Set up media recorder
       const mimeType = MediaRecorder.isTypeSupported('audio/webm')
         ? 'audio/webm'
         : 'audio/mp4';
 
       const mediaRecorder = new MediaRecorder(mediaStream, {
-        mimeType: mimeType,
+        mimeType,
         audioBitsPerSecond: 128000
       });
 
-      // Set up event handlers
+      // Handle data available event
       mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
 
-          // Call the callback if provided
           if (onDataAvailable) {
             onDataAvailable(event.data);
           }
         }
       };
 
+      // Handle recording stop
       mediaRecorder.onstop = () => {
         if (audioChunksRef.current.length === 0) {
           setError("No audio data recorded");
@@ -77,102 +91,102 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
         setAudioUrl(url);
       };
 
+      // Handle recording errors
       mediaRecorder.onerror = (event) => {
-        console.error('Recording error:', event.error);
         setError(`Recording error: ${event.error}`);
         stopRecording();
       };
 
-      // Start recording - get data every 250ms for smoother visualization
+      // Start recording with 250ms chunks for smoother visualization
       mediaRecorder.start(250);
       mediaRecorderRef.current = mediaRecorder;
       setRecording(true);
     } catch (err) {
-      console.error('Error starting recording:', err);
       setError(err.message || 'Failed to start recording');
     }
-  };
+  }, [recording, checkBrowserCompatibility, onDataAvailable]);
 
-  const stopRecording = () => {
+  /**
+   * Stop audio recording
+   */
+  const stopRecording = useCallback(() => {
     if (!recording || !mediaRecorderRef.current) return;
 
     try {
-      console.log('Stopping recording...');
-
-      // Request data one last time to ensure we get the final chunk
+      // Request final data chunk
       if (mediaRecorderRef.current.state === 'recording') {
         try {
           mediaRecorderRef.current.requestData();
-          console.log('Requested final data chunk');
         } catch (err) {
-          console.error('Error requesting final data chunk:', err);
+          setError('Error requesting final data chunk');
         }
       }
 
-      // Stop the recorder after a small delay to ensure the final chunk is processed
+      // Stop recorder after a small delay
       setTimeout(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
-          console.log('MediaRecorder stopped');
         }
         setRecording(false);
 
-        // Stop all audio tracks
+        // Stop audio tracks
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
           setStream(null);
         }
       }, 100);
     } catch (err) {
-      console.error('Error stopping recording:', err);
       setError(err.message || 'Failed to stop recording');
     }
-  };
+  }, [recording, stream]);
 
-  const cancelRecording = () => {
+  /**
+   * Cancel audio recording
+   */
+  const cancelRecording = useCallback(() => {
     if (!recording || !mediaRecorderRef.current) return;
 
     try {
-      // Stop the recorder but don't save the audio
+      // Stop recorder
       if (mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
       }
       setRecording(false);
 
-      // Clear the audio URL
+      // Clear state
       setAudioUrl(null);
+      audioChunksRef.current = [];
 
-      // Stop all audio tracks
+      // Stop audio tracks
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
       }
-
-      // Clear the chunks
-      audioChunksRef.current = [];
     } catch (err) {
-      console.error('Error canceling recording:', err);
       setError(err.message || 'Failed to cancel recording');
     }
-  };
+  }, [recording, stream]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
+      // Stop audio tracks
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+
+      // Stop recorder
       if (mediaRecorderRef.current && recording) {
         try {
           if (mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
           }
         } catch (err) {
-          console.error('Error during cleanup:', err);
+          // Ignore cleanup errors
         }
       }
 
-      // Revoke object URL if it exists
+      // Release object URL
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
@@ -187,4 +201,4 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
     stopRecording,
     cancelRecording
   };
-}
+};
