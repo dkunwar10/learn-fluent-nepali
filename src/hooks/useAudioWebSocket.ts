@@ -51,6 +51,7 @@ export function useAudioWebSocket({
    */
   const connectWebSocket = useCallback(() => {
     if (!token) {
+      console.error('Cannot connect WebSocket: No token provided');
       return null;
     }
 
@@ -60,63 +61,78 @@ export function useAudioWebSocket({
     }
 
     setWsStatus('connecting');
+    console.log('WebSocket connecting...');
 
     // Create WebSocket connection
     const wsUrl = apiUrl.replace(/^http/, 'ws');
-    const ws = new WebSocket(`${wsUrl}/ws/stream/audio?token=${token}`);
+    const wsFullUrl = `${wsUrl}/ws/stream/audio?token=${token}`;
+    console.log('WebSocket URL:', wsFullUrl.replace(token, 'TOKEN_HIDDEN'));
+    const ws = new WebSocket(wsFullUrl);
 
     // Set up event handlers
     ws.onopen = () => {
+      console.log('WebSocket connection opened');
       // Wait for server to send "connected" status
     };
 
     ws.onmessage = (event) => {
+      console.log('WebSocket message received:', event.data);
       try {
         const data = JSON.parse(event.data);
+        console.log('Parsed WebSocket message:', data);
 
         if (data.type === 'status') {
+          console.log('Status message received:', data.status);
           // Handle status messages
           switch (data.status) {
             case 'connected':
+              console.log('WebSocket connected status received');
               setWsStatus('connected');
               break;
 
             case 'recording_received':
+              console.log('Recording received status');
               setProcessingStatus('recording_received');
               if (onStatusChange) onStatusChange('recording_received');
               break;
 
             case 'verifying':
+              console.log('Verifying status');
               setProcessingStatus('verifying');
               if (onStatusChange) onStatusChange('verifying');
               break;
 
             case 'processing':
+              console.log('Processing status');
               setProcessingStatus('processing');
               if (onStatusChange) onStatusChange('processing');
               break;
 
             case 'completed':
+              console.log('Completed status with task set ID:', data.task_set_id);
               setProcessingStatus('completed');
               if (onStatusChange) onStatusChange('completed', data.task_set_id);
               break;
 
             case 'recording_cancelled':
+              console.log('Recording cancelled status');
               setProcessingStatus('recording_cancelled');
               if (onStatusChange) onStatusChange('recording_cancelled');
               break;
           }
         }
       } catch (error) {
-        // Ignore parsing errors
+        console.error('Error parsing WebSocket message:', error);
       }
     };
 
-    ws.onerror = () => {
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
       setWsStatus('error');
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      console.log('WebSocket closed:', event.code, event.reason);
       setWsStatus('disconnected');
     };
 

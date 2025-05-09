@@ -33,10 +33,15 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
    * Start audio recording
    */
   const startRecording = useCallback(async () => {
-    if (recording) return;
+    console.log('useRecorder: startRecording called');
+    if (recording) {
+      console.log('Already recording, ignoring startRecording call');
+      return;
+    }
 
     // Check compatibility
     if (!checkBrowserCompatibility()) {
+      console.error('Browser compatibility check failed');
       setError("Your browser doesn't support audio recording");
       return;
     }
@@ -45,8 +50,10 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
     setAudioUrl(null);
     setError(null);
     audioChunksRef.current = [];
+    console.log('State reset for new recording');
 
     try {
+      console.log('Requesting microphone access...');
       // Get microphone access
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -55,6 +62,7 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
           autoGainControl: true
         }
       });
+      console.log('Microphone access granted');
 
       setStream(mediaStream);
 
@@ -62,18 +70,22 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
       const mimeType = MediaRecorder.isTypeSupported('audio/webm')
         ? 'audio/webm'
         : 'audio/mp4';
+      console.log('Using MIME type:', mimeType);
 
       const mediaRecorder = new MediaRecorder(mediaStream, {
         mimeType,
         audioBitsPerSecond: 128000
       });
+      console.log('MediaRecorder created');
 
       // Handle data available event
       mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
+          console.log(`Audio chunk received: ${event.data.size} bytes`);
           audioChunksRef.current.push(event.data);
 
           if (onDataAvailable) {
+            console.log('Calling onDataAvailable callback');
             onDataAvailable(event.data);
           }
         }
@@ -81,27 +93,34 @@ export const useRecorder = ({ onDataAvailable }: UseRecorderOptions = {}) => {
 
       // Handle recording stop
       mediaRecorder.onstop = () => {
+        console.log('MediaRecorder stopped');
         if (audioChunksRef.current.length === 0) {
+          console.error('No audio data recorded');
           setError("No audio data recorded");
           return;
         }
 
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        console.log(`Created audio blob: ${audioBlob.size} bytes`);
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
       };
 
       // Handle recording errors
       mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event.error);
         setError(`Recording error: ${event.error}`);
         stopRecording();
       };
 
       // Start recording with 250ms chunks for smoother visualization
+      console.log('Starting MediaRecorder with 250ms chunks');
       mediaRecorder.start(250);
       mediaRecorderRef.current = mediaRecorder;
       setRecording(true);
+      console.log('Recording started successfully');
     } catch (err) {
+      console.error('Error starting recording:', err);
       setError(err.message || 'Failed to start recording');
     }
   }, [recording, checkBrowserCompatibility, onDataAvailable]);

@@ -1,15 +1,24 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutList, Settings, User, LogOut } from 'lucide-react';
+import {
+  Home,
+  LayoutList,
+  Settings,
+  User,
+  LogOut,
+  BookOpen,
+  Mic,
+  BarChart2
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarHeader, 
-  SidebarFooter, 
-  SidebarMenu, 
-  SidebarMenuButton, 
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem
 } from '@/components/ui/sidebar';
 
@@ -21,20 +30,25 @@ const SideNavigation: React.FC = () => {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
-  
+
   const handleLogout = () => {
     logout();
   };
 
   return (
     <Sidebar>
-      <SidebarHeader className="flex items-center justify-center py-4">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-sidebar-foreground">Nepali App</h2>
-          <p className="text-xs text-sidebar-foreground/70 mt-1">Language Learning</p>
+      <SidebarHeader className="flex items-center py-4 px-4">
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-full bg-nepali-red flex items-center justify-center">
+            <span className="text-white font-bold">NP</span>
+          </div>
+          <div className="ml-3">
+            <h2 className="text-lg font-bold text-sidebar-foreground">Nepali Learning</h2>
+            <p className="text-xs text-sidebar-foreground/70">Learn Fluent Nepali</p>
+          </div>
         </div>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -45,7 +59,16 @@ const SideNavigation: React.FC = () => {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={isActive('/begin-learning')} tooltip="Begin Learning">
+              <Link to="/begin-learning">
+                <Mic className="size-4" />
+                <span>Begin Learning</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={isActive('/tasks')} tooltip="Tasks">
               <Link to="/tasks">
@@ -54,31 +77,22 @@ const SideNavigation: React.FC = () => {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
-              <Link to="/settings">
-                <Settings className="size-4" />
-                <span>Settings</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
-      
+
       <SidebarFooter className="pb-4">
         {user && (
           <div className="flex flex-col gap-2 p-2">
             <div className="flex items-center gap-2 px-2 py-1">
-              <div className="bg-sidebar-accent rounded-full p-2">
-                <User className="size-4 text-sidebar-accent-foreground" />
+              <div className="bg-nepali-red rounded-full p-2">
+                <User className="size-4 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{user.name || 'User'}</span>
-                <span className="text-xs text-sidebar-foreground/70">{user.email}</span>
+                <span className="text-sm font-medium">{user.username || 'User'}</span>
+                <span className="text-xs text-sidebar-foreground/70">{user.role || 'Student'}</span>
               </div>
             </div>
-            
+
             <SidebarMenuButton onClick={handleLogout} tooltip="Log Out">
               <LogOut className="size-4" />
               <span>Log Out</span>

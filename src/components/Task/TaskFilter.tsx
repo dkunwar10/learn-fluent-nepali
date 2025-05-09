@@ -21,31 +21,39 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ filter, onFilterChange }) => {
   const [search, setSearch] = useState(filter.search || '');
   const [status, setStatus] = useState(filter.status || 'all');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(
-    filter.date_from ? new Date(filter.date_from) : undefined
+    filter.start_date ? new Date(filter.start_date) : undefined
   );
   const [dateTo, setDateTo] = useState<Date | undefined>(
-    filter.date_to ? new Date(filter.date_to) : undefined
+    filter.end_date ? new Date(filter.end_date) : undefined
   );
   const [sortBy, setSortBy] = useState(filter.sort_by || 'created_at');
-  const [sortOrder, setSortOrder] = useState(filter.sort_order.toString() || '-1');
+  // Ensure sort order is stored as a string but represents a number (1 or -1)
+  const [sortOrder, setSortOrder] = useState(
+    filter.sort_order !== undefined ? filter.sort_order.toString() : '-1'
+  );
 
   // Apply filters
   const applyFilters = () => {
-    console.log('Applying filters with sort:', sortBy, sortOrder);
+    // Parse sort order to number (1 for ascending, -1 for descending)
+    const numericSortOrder = parseInt(sortOrder);
+
+    console.log('Applying filters with sort:', sortBy, 'order:', numericSortOrder);
+
     onFilterChange({
       ...filter,
       search,
       status: status === 'all' ? undefined : status,
-      date_from: dateFrom ? format(dateFrom, 'yyyy-MM-dd') : undefined,
-      date_to: dateTo ? format(dateTo, 'yyyy-MM-dd') : undefined,
+      start_date: dateFrom ? format(dateFrom, 'yyyy-MM-dd') : undefined,
+      end_date: dateTo ? format(dateTo, 'yyyy-MM-dd') : undefined,
       sort_by: sortBy,
-      sort_order: parseInt(sortOrder),
+      sort_order: numericSortOrder, // Ensure it's a number
       page: 1, // Reset to first page when filters change
     });
   };
 
   // Reset filters
   const resetFilters = () => {
+    // Reset local state
     setSearch('');
     setStatus('all');
     setDateFrom(undefined);
@@ -53,21 +61,22 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ filter, onFilterChange }) => {
     setSortBy('created_at');
     setSortOrder('-1');
 
+    // Apply reset to filter state with numeric sort order
     onFilterChange({
       page: 1,
       limit: filter.limit,
       sort_by: 'created_at',
-      sort_order: -1,
+      sort_order: -1, // Ensure it's a number (-1 for descending)
+      // Clear all other filters
+      search: undefined,
+      status: undefined,
+      start_date: undefined,
+      end_date: undefined
     });
   };
 
-  // Handle sort change
-  const handleSortChange = (sortBy: string, sortOrder: string) => {
-    setSortBy(sortBy);
-    setSortOrder(sortOrder);
-
-    // Don't immediately trigger filter change, wait for Apply Filters button
-  };
+  // No need for a separate handleSortChange function
+  // We'll update the state directly in the Select onValueChange
 
   return (
     <div className="bg-white p-3 rounded-lg shadow mb-4">
@@ -146,12 +155,14 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ filter, onFilterChange }) => {
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="created_at:-1">Newest First</SelectItem>
-            <SelectItem value="created_at:1">Oldest First</SelectItem>
-            <SelectItem value="name:1">Name (A-Z)</SelectItem>
-            <SelectItem value="name:-1">Name (Z-A)</SelectItem>
-            <SelectItem value="status:1">Status (Asc)</SelectItem>
-            <SelectItem value="status:-1">Status (Desc)</SelectItem>
+            <SelectItem value="created_at:-1">Date (Newest First) ↓</SelectItem>
+            <SelectItem value="created_at:1">Date (Oldest First) ↑</SelectItem>
+            <SelectItem value="input_content:1">Content (A-Z) ↑</SelectItem>
+            <SelectItem value="input_content:-1">Content (Z-A) ↓</SelectItem>
+            <SelectItem value="status:1">Status (A-Z) ↑</SelectItem>
+            <SelectItem value="status:-1">Status (Z-A) ↓</SelectItem>
+            <SelectItem value="max_score:-1">Score (High-Low) ↓</SelectItem>
+            <SelectItem value="max_score:1">Score (Low-High) ↑</SelectItem>
           </SelectContent>
         </Select>
       </div>
