@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTaskListService, TaskSetFilter, TaskSet } from '@/api/taskListService';
 import TaskCard from './TaskCard';
@@ -6,6 +7,7 @@ import TaskPagination from './TaskPagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * Component for displaying a list of task sets with filtering and pagination
@@ -13,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 const TaskList: React.FC = () => {
   // Task service
   const { fetchTaskSets: apiFetchTaskSets } = useTaskListService();
+  const { toast } = useToast();
 
   // Use useCallback to memoize the fetchTaskSets function
   const fetchTaskSets = useCallback(
@@ -40,13 +43,16 @@ const TaskList: React.FC = () => {
     end_date: undefined
   });
 
-  // Track if initial data has been loaded
+  // Track if initial data has been loaded and filter changes
   const dataLoadedRef = useRef(false);
+  const previousFilterRef = useRef<string>(JSON.stringify(filter));
 
   // Load task sets
   useEffect(() => {
+    const currentFilterString = JSON.stringify(filter);
+    
     // Skip if data has already been loaded and filter hasn't changed
-    if (dataLoadedRef.current && !loading) {
+    if (dataLoadedRef.current && currentFilterString === previousFilterRef.current) {
       return;
     }
 
@@ -57,6 +63,9 @@ const TaskList: React.FC = () => {
       try {
         console.log('Fetching task sets with filter:', filter);
         const response = await fetchTaskSets(filter);
+
+        // Update the previous filter ref to avoid unnecessary refetches
+        previousFilterRef.current = currentFilterString;
 
         // Check if response and response.items exist
         if (response && Array.isArray(response.items)) {
@@ -70,6 +79,12 @@ const TaskList: React.FC = () => {
           setTotalItems(0);
           setTotalPages(0);
           setError('Invalid response format from server');
+          
+          toast({
+            title: 'Error',
+            description: 'Failed to load tasks. Invalid response format.',
+            variant: 'destructive',
+          });
         }
       } catch (err) {
         console.error('Error fetching task sets:', err);
@@ -77,30 +92,39 @@ const TaskList: React.FC = () => {
         setTaskSets([]);
         setTotalItems(0);
         setTotalPages(0);
+        
+        toast({
+          title: 'Error',
+          description: 'Failed to load tasks. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
     };
 
     loadTaskSets();
-  }, [filter, fetchTaskSets, loading]);
+  }, [filter, fetchTaskSets, toast]);
 
   // Handle filter change
   const handleFilterChange = (newFilter: TaskSetFilter) => {
-    dataLoadedRef.current = false; // Reset to force reload
     setFilter(newFilter);
   };
 
   // Handle page change
   const handlePageChange = (page: number) => {
-    dataLoadedRef.current = false; // Reset to force reload
     setFilter({ ...filter, page });
   };
 
   // Handle page size change
   const handlePageSizeChange = (limit: number) => {
-    dataLoadedRef.current = false; // Reset to force reload
     setFilter({ ...filter, limit, page: 1 });
+  };
+
+  // Manual refetch function
+  const refetchTaskSets = () => {
+    dataLoadedRef.current = false;
+    setLoading(true);
   };
 
   // Render loading skeletons
