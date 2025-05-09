@@ -15,10 +15,10 @@ interface TenantLoginProps {
 const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
   const [step, setStep] = useState(initialSlug ? 1 : 0);
   const [tenantSlug, setTenantSlug] = useState(initialSlug);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login, setTenantSlug: updateTenantSlug } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -52,8 +52,8 @@ const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
+
+    if (!username || !password) {
       toast({
         title: "Missing Fields",
         description: "Please fill in all fields",
@@ -63,7 +63,7 @@ const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
     }
 
     setIsLoading(true);
-    const response = await loginUser(email, password, tenantSlug);
+    const response = await loginUser(username, password, tenantSlug);
     setIsLoading(false);
 
     if (response.success && response.user) {
@@ -89,8 +89,8 @@ const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
           {step === 0 ? "Enter Tenant ID" : "Login to Your Account"}
         </CardTitle>
         <CardDescription className="text-center">
-          {step === 0 
-            ? "Please enter your organization's tenant ID" 
+          {step === 0
+            ? "Please enter your organization's tenant ID"
             : `Login to ${tenantSlug}`}
         </CardDescription>
       </CardHeader>
@@ -106,8 +106,8 @@ const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
                 className="w-full"
               />
             </div>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full nepali-gradient text-white"
               disabled={isLoading}
             >
@@ -118,10 +118,10 @@ const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div className="space-y-2">
               <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 className="w-full"
               />
@@ -136,8 +136,8 @@ const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
                 className="w-full"
               />
             </div>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full nepali-gradient text-white"
               disabled={isLoading}
             >
@@ -148,8 +148,8 @@ const TenantLogin: React.FC<TenantLoginProps> = ({ initialSlug = "" }) => {
       </CardContent>
       <CardFooter className="flex justify-center">
         {step === 1 && (
-          <Button 
-            variant="link" 
+          <Button
+            variant="link"
             onClick={() => setStep(0)}
             className="text-nepali-blue"
           >

@@ -7,6 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import SlugLogin from "./pages/SlugLogin";
 import DashboardPage from "./pages/DashboardPage";
+import BeginLearning from "./pages/Learning/BeginLearning";
+import TaskView from "./pages/Learning/TaskView";
+import TaskPage from "./pages/Task/TaskPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -23,6 +26,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/:slug/login" element={<SlugLogin />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/begin-learning" element={<BeginLearning />} />
+            <Route path="/tasks/:taskSetId" element={<TaskView />} />
+            <Route path="/tasks" element={<TaskPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
